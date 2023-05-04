@@ -7,14 +7,14 @@
 
 using namespace std;
 
-string dynamicProgramming(string arrayOne, string arrayTwo);
-string topDownApproach(string arrayOne, string arrayTwo, int size1, int size2, vector<vector<string>>& memo);
+string bottomUpApproach(string arrayOne, string arrayTwo);
+string topDownApproach(string arrayOne, string arrayTwo, int size1, int size2, vector<vector<string>>&  vectorTable2D);
 
 int main(int argc, char *argv[])
 {
     long long duration = 0; //initialize the running time to 0
 
-    int lengthToTest = 100; //length of the string to test can change this value for the tests
+    int lengthToTest = 1000; //length of the string to test can change this value for the tests
 
     if (argc != 3)
     {
@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
     if (option == "-b")
     {
         auto start = std::chrono::high_resolution_clock::now();  //start the timer 
-        result = dynamicProgramming(arrayOne, arrayTwo);
+        result = bottomUpApproach(arrayOne, arrayTwo);
         auto end = std::chrono::high_resolution_clock::now(); //end the timer
         duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count(); //calculate the running time
     }
@@ -67,18 +67,20 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    cout << "Sequence 1: " << arrayOne << endl;                                // print the two sequences and the Least Common Subsequence
+    cout << "length to test: " << lengthToTest << endl;                        
+    cout << "Sequence 1: " << arrayOne << endl;                                // display the two sequences and the Longest Common Subsequence
     cout << "Sequence 2: " << arrayTwo << endl;
     cout << "LCS: " << result << endl;
-    cout << "Running time: " <<  duration << " milliseconds" << endl;            // print the running time
+    cout << "Running time: " <<  duration << " milliseconds" << endl;            // display the running time
 
     return 0;
 }
 
 
 
-string dynamicProgramming(string arrayOne, string arrayTwo)              //pass in the two sequences as parameters
+string bottomUpApproach(string arrayOne, string arrayTwo)              //pass in the two sequences as parameters
 {
+    string longestCommonString;
     int size1 = arrayOne.size();                                         // size of the two sequences
     int size2 = arrayTwo.size();
 
@@ -88,7 +90,7 @@ string dynamicProgramming(string arrayOne, string arrayTwo)              //pass 
         first argument is the number of rows and the second argument is the number of columns.
         The purpose of the table is to store the length of the LCS for all possible prefixes of the two arrays. Each cell (i,j) in the table represents the length of the LCS for the first 
         i chars of the first array and the first j chars of the second array.
-        By using the 2D vector we can store and access the intermediate results of the LCM. This is how we get rid of redundant calls.
+        By using the 2D vector we can store and access the intermediate results of the LCS. This is how we can limit calculations.
     */                                                                                            
     vector<vector<int>> memoTable(size1 + 1, vector<int>(size2 + 1, 0));                                   
                                                                     
@@ -98,23 +100,23 @@ string dynamicProgramming(string arrayOne, string arrayTwo)              //pass 
         {
             if (arrayOne[i - 1] == arrayTwo[j - 1])                        
             {
-                memoTable[i][j] = memoTable[i - 1][j - 1] + 1;               // if the two characters are equal, add 1 to the diagonal number because its part of the LCS
+                memoTable[i][j] = memoTable[i - 1][j - 1] + 1;      // if the two characters are equal, add 1 to the diagnal number and store the result in the current cell
             }
             else
             {
-                memoTable[i][j] = max(memoTable[i - 1][j], memoTable[i][j - 1]);    // if the two characters are not equal, take the maximum of the two numbers above and to the left
+                memoTable[i][j] = max(memoTable[i - 1][j], memoTable[i][j - 1]);    // if the two characters are not equal, take the maximum of the two numbrs above and to the left
             }
         }
     }               //memotable is filled with the length of the LCS for all possible prefixes of the two arrays
 
-    string leastCommonString;
-    int i = size1;                //set i and j to the last number of the table because we want to start from the end
+
+    int i = size1;                //set i and j to the last number of the table because we want to start from the end  "backtracing"
     int j = size2;                                               
-    while (i > 0 && j > 0)
+    while (i > 0 && j > 0)  //while not at the first row or column of the table beause that is the base case
     {
-        if (arrayOne[i - 1] == arrayTwo[j - 1])                         
+        if (arrayOne[i - 1] == arrayTwo[j - 1])         
         {
-            leastCommonString.push_back(arrayOne[i - 1]);           // if the two characters are equal, add the character to the leastCommonString
+            longestCommonString.push_back(arrayOne[i - 1]);  // if the two chars are equal add the char to the longestCommonString string
             i--;                                                    
             j--;               // move diagonally up
         }
@@ -126,46 +128,42 @@ string dynamicProgramming(string arrayOne, string arrayTwo)              //pass 
         {
             j--;                              // move left
         }
-    }  //at the end of the while loop we have the leastCommonString string stored in backwards order
+    }  //at the end of the loop we have the longestCommonString string stored in backwards order
 
-    reverse(leastCommonString.begin(), leastCommonString.end());   // reverse the leastCommonString string because we started from the end of the table , leastCommonString.begin is the first element of the string and leastCommonString.end is the last element of the string
-    return leastCommonString;
+    reverse(longestCommonString.begin(), longestCommonString.end());   // reverse the longestCommonString string because we started from the end of the table
+    return longestCommonString;                                        
 }
 
 
 //each cell in the vectorTable2D table stores the LCS(string) for the first i chars of the first array and the first j chars of the second array 
 string topDownApproach(string arrayOne, string arrayTwo, int size1, int size2, vector<vector<string>>& vectorTable2D)
 {
-    if (size1 == 0 || size2 == 0)   // base case, if either of the sizes is 0, return an empty string
+    if (size1 == 0 || size2 == 0)   // base case, if either of the sizes is 0, return an empty string because there is no LCS  "reached the end of the string"
     {
         return "";
     }
 
-    if (vectorTable2D[size1][size2] != "")   // if the value is already in the vectorTable2D table, return it
+    if (vectorTable2D[size1][size2] != "")   // if the value is already in the vectorTable2D table, return it   "already calculated"
     {
-      //  cout << "im in here \n";
-        return vectorTable2D[size1][size2];  // vectorTable2D[size1][size2] is the value stored in the vectorTable2D table at the given index
+        return vectorTable2D[size1][size2];  // returns the value stored in the table at that index
     }
 
-    if (arrayOne[size1 - 1] == arrayTwo[size2 - 1])  // if the two characters are equal, add the character to the vectorTable2D table and return the value
+    if (arrayOne[size1 - 1] == arrayTwo[size2 - 1])  // if the two characters are equal, add the character to the table and call the function recursively with a size -1 because we added the character to the table
     { 
-     //   cout << "called they equal " << size1 - 1 << " " << size2 - 1 << "\n";
-        vectorTable2D[size1][size2] = topDownApproach(arrayOne, arrayTwo, size1 - 1, size2 - 1, vectorTable2D) + arrayOne[size1 - 1];  // add the character to the vectorTable2D table
+        vectorTable2D[size1][size2] = topDownApproach(arrayOne, arrayTwo, size1 - 1, size2 - 1, vectorTable2D) + arrayOne[size1 - 1];  //returns the LCS(string) of the new size but adds the character to the end of the string after the function returns
     }
-    else  // if the two characters are not equal, call the function recursively and store the result in the vectorTable2D table
+    else  // if the two characters are not equal, call the function and store the result in the table
     {
-    //    cout << "calling left recusion  " << size1 - 1 << " " << size2 << "\n";
-        string left = topDownApproach(arrayOne, arrayTwo, size1 - 1, size2, vectorTable2D);  // call the left side of the tree and store the result in left because we are going left
-     //   cout << "calling right recusion " << size1 << " " << size2 - 1 << "\n";
-        string right = topDownApproach(arrayOne, arrayTwo, size1, size2 - 1, vectorTable2D); // call the right side of the tree and store the result in right because we are going right
+        string leftSide = topDownApproach(arrayOne, arrayTwo, size1 - 1, size2, vectorTable2D);  // call the left side of the tree and store the result in leftSide "take away the last character of the first string"
+        string rightSide = topDownApproach(arrayOne, arrayTwo, size1, size2 - 1, vectorTable2D); // call the right side of the tree and store the result in rightSide because we are going right  "take away the last character of the second string"
 
-        if (left.size() > right.size())
+        if (leftSide.size() > rightSide.size())
         {
-            vectorTable2D[size1][size2] = left;    // if the left side is greater than the right side, store the left side in the vectorTable2D table
+            vectorTable2D[size1][size2] = leftSide;    // if the left side is greater than the right side, store the left side in the table
         }
         else
         {
-            vectorTable2D[size1][size2] = right;  // if the right side is greater than the left side, store the right side in the vectorTable2D table
+            vectorTable2D[size1][size2] = rightSide;  // if the right side is greater than the left side, store the right side in the  table by adding the character to the table
         }
     }
 
